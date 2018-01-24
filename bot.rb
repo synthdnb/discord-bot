@@ -21,13 +21,15 @@ end
 
 Discordrb::LOGGER.mode = :debug
 
-reserved = %w(공지 등록 삭제 목록)
+reserved = %w(등록 삭제 목록)
 
 client.message(with_text: /\A!(\S+)(.*)/m) do |event|
+    next unless event.server
     next unless /\A!(\S+)(.*)/m.match(event.message.content)
     cmd = $1
     content = $2.strip
-    keywords = redis.hkeys "keywords"
+    hkey = "#{event.server.id}-keywords"
+    keywords = redis.hkeys(hkey)
     case cmd
     when "목록"
         event << keywords.sort.join(", ")
@@ -51,7 +53,7 @@ client.message(with_text: /\A!(\S+)(.*)/m) do |event|
         end
 
         if data[:value]
-            redis.hset "keywords", data[:key], data[:value]
+            redis.hset(hkey, data[:key], data[:value])
             event << "키워드 '#{data[:key]}' 등록을 완료했습니다"
         else
             event << "내용을 입력해주세요"
@@ -60,14 +62,14 @@ client.message(with_text: /\A!(\S+)(.*)/m) do |event|
         # next unless event.channel.type == 1
         next unless content.match /\A(\S+)(.*)/m
         key = $1
-        result = redis.hdel("keywords", key)
+        result = redis.hdel(hkey, key)
         if result == 1
             event << "키워드 '#{key}' 삭제를 완료했습니다"
         else
             event << "그런거 없는데수우"
         end
     else
-        response = redis.hget "keywords", cmd
+        response = redis.hget(hkey, cmd)
         if response
             event << response
         else
@@ -76,7 +78,7 @@ client.message(with_text: /\A!(\S+)(.*)/m) do |event|
             when 0
             when 1
                 keyword = targets.first
-                response = redis.hget "keywords", keyword
+                response = redis.hget(hkey, keyword)
                 event << "!#{keyword}\n#{response}"
             else
                 event << targets.sort.join(", ")

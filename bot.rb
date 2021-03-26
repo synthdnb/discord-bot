@@ -23,6 +23,65 @@ Discordrb::LOGGER.mode = :debug
 
 reserved = %w(등록 삭제 목록)
 
+
+def rand_uma
+    weight = {
+        "A" => 100,
+        "B" => 10,
+        "C" => 5,
+        "D" => 4,
+        "E" => 3,
+        "F" => 2,
+        "G" => 1,
+    }
+
+    uma = {
+        "맥퀸"  => %w(A E G F A A B A D F),
+        "루돌프" => %w(A G E C A A B A A C),
+        "바병스" => %w(A G F C A A G A A C),
+        "스즈카" => %w(A G D A A E A C E G),
+        "마루젠" => %w(A D B A B C A E G G),
+        "오구리" => %w(A B E A A B F A A D),
+        "고루시" => %w(A G G C A A G B B A),
+        "보드카" => %w(A G F A A F C B A F),
+        "다이와" => %w(A G F A A B A A E G),
+        "그라스" => %w(A G G A B A F A A F),
+        "엘콘파" => %w(A B F A A B E A A C),
+        "그루브" => %w(A G C B A E D A A G),
+        "대두"  => %w(A F F C A A E A B E),
+        "마야노" => %w(A E D D A A A A B B),
+        "라이스" => %w(A G E C A A B A C G),
+        "타키온" => %w(A G G D A B E A B F),
+        "위닝티켓" => %w(A G G F A B G B A G),
+        "박신오" => %w(A G A B G G A A F G),
+        "슈퍼크릭" => %w(A G G G A A D A B G),
+        "우라라" => %w(G A A B G G G G A B),
+        "마치카네후쿠키타루" => %w(A F F C A A G B A F),
+        "네이쳐" => %w(A G G C A A F B A D),
+        "킹" => %w(A G A B B C G B A D),
+        "라이언" => %w(A G E C A B F A A F),
+        "테이오" => %w(A G F E A B D A C E),
+        "타이키" => %w(A B A A E G C A E G),
+        "오페라" => %w(A E G E A A C A A G),
+        "부르봉" => %w(A G C B A B A E G G)
+    }
+    stat_names = %w(잔디 더트 단거리 마일 중거리 장거리 도주 선행 사시 추입)
+
+    uma_key = uma.keys.sample
+    weights = uma[uma_key].map{|x| weight[x]}
+    if weights[0] == 100
+        weights[0] = 0
+    end
+    if weights[1] == 100
+        weights[1] = 0
+    end
+    ps = weights.map { |w| (Float w) / weights.reduce(:+) }
+    loaded_die = stat_names.zip(ps).to_h
+    stat = loaded_die.max_by { |_, weight| rand ** (1.0 / weight) }.first
+
+    return "#{stat} #{uma_key}"
+end
+
 client.message(with_text: /\A!(\S+)(.*)/m) do |event|
     next unless event.server
     next unless /\A!(\S+)(.*)/m.match(event.message.content)
@@ -68,6 +127,8 @@ client.message(with_text: /\A!(\S+)(.*)/m) do |event|
         else
             event << "그런거 없는데수우"
         end
+    when "뭐키우지"
+        event << rand_uma
     else
         response = redis.hget(hkey, cmd)
         if response

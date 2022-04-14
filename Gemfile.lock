@@ -37,11 +37,11 @@ GEM
       websocket
 
 PLATFORMS
-  ruby
+  arm64-darwin-20
 
 DEPENDENCIES
   discordrb
   redis
 
 BUNDLED WITH
-   2.3.3
+   2.3.11

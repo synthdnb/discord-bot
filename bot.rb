@@ -97,6 +97,7 @@ client.message(with_text: /\A!(\S+)(.*)/m) do |event|
     when "이동"
         next unless content.match /\A(\S+)(.*)/m
         keys = $1
+        moved = []
         keys.split(",").each do |key|
             key = key.strip
             val = redis.hget(skey, key)
@@ -112,9 +113,10 @@ client.message(with_text: /\A!(\S+)(.*)/m) do |event|
             if val
                 redis.hdel(skey, key)
                 redis.hset(ckey, key, val)
-                event << "키워드 '#{key}'를 채널 '#{chan_name}' 로 이동했습니다"
+                moved << key
             end
         end
+        event << "키워드 #{moved.join(",")} 를 채널 '#{chan_name}' 로 이동했습니다"
     else
         response = redis.hget(hkey, cmd)
         if response

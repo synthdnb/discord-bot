@@ -21,21 +21,35 @@ end
 
 Discordrb::LOGGER.mode = :debug
 
-reserved = %w(등록 삭제 목록)
+reserved = %w(등록 삭제 목록 격리 이동)
 
 
 client.message(with_text: /\A!(\S+)(.*)/m) do |event|
     next unless event.server
     next unless /\A!(\S+)(.*)/m.match(event.message.content)
+
     cmd = $1
     content = $2.strip
-    hkey = "#{event.server.id}-keywords"
+
+    chan_id = event.message.channel.id
+    chan_name = event.message.channel.channel_name
+    chan_iso_key = "#{event.server.id}-#{chan_id}-isolated"
+    isolated = redis.get(chan_iso_key)
+
+    skey = "#{event.server.id}-keywords"
+    ckey = "#{event.server.id}-#{chan_id}-keywords"
+
+    if isolated
+        hkey = ckey
+    else
+        hkey = skey
+    end
+
     keywords = redis.hkeys(hkey)
     case cmd
     when "목록"
         event << keywords.sort.join(", ")
     when "등록"
-        # next unless event.channel.type == 1
         data = {}
 
         if event.message.attachments.empty?
@@ -60,7 +74,6 @@ client.message(with_text: /\A!(\S+)(.*)/m) do |event|
             event << "내용을 입력해주세요"
         end
     when "삭제"
-        # next unless event.channel.type == 1
         next unless content.match /\A(\S+)(.*)/m
         key = $1
         result = redis.hdel(hkey, key)
@@ -69,6 +82,33 @@ client.message(with_text: /\A!(\S+)(.*)/m) do |event|
         else
             event << "그런거 없는데수우"
         end
+    when "격리"
+        if isolated
+            redis.del(chan_iso_key)
+            event << "채널 '#{chan_name}' 격리 해제"
+        else
+            redis.set(chan_iso_key, 1)
+            event << "채널 '#{chan_name}' 격리 완료"
+        end
+    when "이동"
+        next unless content.match /\A(\S+)(.*)/m
+        key = $1
+        val = redis.hget(skey, key)
+        unless val
+            keywords = redis.hkeys(skey)
+            targets = keywords.select{|x| x.include? key}
+            case targets.length
+            when 1
+                val = targets.first
+            end
+        end
+
+        if val
+            redis.hdel(skey, key)
+            redis.hset(ckey, key, val)
+            event << "키워드 '#{key}'를 채널 '#{chan_name}' 로 이동했습니다"
+        end
+
     else
         response = redis.hget(hkey, cmd)
         if response

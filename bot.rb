@@ -32,7 +32,7 @@ client.message(with_text: /\A!(\S+)(.*)/m) do |event|
     content = $2.strip
 
     chan_id = event.message.channel.id
-    chan_name = event.message.channel.channel_name
+    chan_name = event.message.channel.name
     chan_iso_key = "#{event.server.id}-#{chan_id}-isolated"
     isolated = redis.get(chan_iso_key)
 
@@ -48,7 +48,11 @@ client.message(with_text: /\A!(\S+)(.*)/m) do |event|
     keywords = redis.hkeys(hkey)
     case cmd
     when "목록"
-        event << keywords.sort.join(", ")
+        if keywords.length == 0
+            event << "키워드가 없습니다"
+        else
+            event << keywords.sort.join(", ")
+        end
     when "등록"
         data = {}
 
@@ -92,23 +96,25 @@ client.message(with_text: /\A!(\S+)(.*)/m) do |event|
         end
     when "이동"
         next unless content.match /\A(\S+)(.*)/m
-        key = $1
-        val = redis.hget(skey, key)
-        unless val
-            keywords = redis.hkeys(skey)
-            targets = keywords.select{|x| x.include? key}
-            case targets.length
-            when 1
-                val = targets.first
+        keys = $1
+        keys.split(",").each do |key|
+            key = key.strip
+            val = redis.hget(skey, key)
+            unless val
+                keywords = redis.hkeys(skey)
+                targets = keywords.select{|x| x.include? key}
+                case targets.length
+                when 1
+                    val = targets.first
+                end
+            end
+
+            if val
+                redis.hdel(skey, key)
+                redis.hset(ckey, key, val)
+                event << "키워드 '#{key}'를 채널 '#{chan_name}' 로 이동했습니다"
             end
         end
-
-        if val
-            redis.hdel(skey, key)
-            redis.hset(ckey, key, val)
-            event << "키워드 '#{key}'를 채널 '#{chan_name}' 로 이동했습니다"
-        end
-
     else
         response = redis.hget(hkey, cmd)
         if response

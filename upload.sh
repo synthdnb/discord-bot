@@ -1,3 +1,2 @@
 #!/bin/sh
-docker build -t synthdnb/gbf-discord-bot . && docker push synthdnb/gbf-discord-bot
-
+docker buildx build --platform linux/amd64 --push -t synthdnb/gbf-discord-bot .

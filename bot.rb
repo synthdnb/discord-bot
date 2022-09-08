@@ -122,7 +122,7 @@ client.message(with_text: /\A!(\S+)(.*)/m) do |event|
         if response
             event << response
         else
-            targets = keywords.select{|x| x.include? cmd}
+            targets = keywords.select{|x| x.downcase.include? cmd.downcase}
             case targets.length
             when 0
             when 1

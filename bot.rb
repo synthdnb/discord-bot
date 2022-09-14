@@ -71,6 +71,11 @@ client.message(with_text: /\A!(\S+)(.*)/m) do |event|
             next
         end
 
+        if data[:key].start_with "http"
+            event << "?"
+            next
+        end
+
         if data[:value]
             redis.hset(hkey, data[:key], data[:value])
             event << "키워드 '#{data[:key]}' 등록을 완료했습니다"

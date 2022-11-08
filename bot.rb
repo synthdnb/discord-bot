@@ -71,7 +71,7 @@ client.message(with_text: /\A!(\S+)(.*)/m) do |event|
             next
         end
 
-        if data[:key].start_with "http"
+        if data[:key].start_with? "http"
             event << "?"
             next
         end

@@ -24,6 +24,24 @@ Discordrb::LOGGER.mode = :debug
 reserved = %w(등록 삭제 목록 격리 이동)
 
 
+client.message(contains: /\/\/(x|twitter)\.com\//m) do |event|
+    next unless event.server
+    next unless /\/\/(x|twitter)\.com\//m.match(event.message.content)
+
+    event.message.create_reaction("❌")
+
+end
+
+client.reaction_add(emoji: "❌") do |event|
+    next unless event.server
+    next unless event.user == event.message.author
+
+    event.message.delete_all_reactions()
+    modified_content = event.message.content.gsub(/\/\/(x|twitter)\.com\//m, '//vxtwitter.com/')
+
+    event.message.reply!(modified_content, mention_user: true)
+end
+
 client.message(with_text: /\A!(\S+)(.*)/m) do |event|
     next unless event.server
     next unless /\A!(\S+)(.*)/m.match(event.message.content)
